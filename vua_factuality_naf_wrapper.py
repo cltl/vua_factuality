@@ -7,7 +7,7 @@ Created on July 8, 2015
 from KafNafParserPy import *
 from subprocess import call
 import sys
-
+import time
 
 class CtermInfo:
     '''
@@ -384,7 +384,7 @@ def update_naflayer(nafobj, factDict):
     #add factuality node to parser
     nafobj.root.append(myFactualityLayer.get_node())
     nafobj.factuality_layer = myFactualityLayer
-    nafobj.dump()
+    
             
 
 def initiate_fact_dict_from_previous_naf(info_per_term):
@@ -433,9 +433,12 @@ def main(argv=None):
     if len(argv) < 2:   
         print 'Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument'
     else:    
+        
+        begintime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
         tmpdir = argv[1]
         nafobj = KafNafParser(sys.stdin)
         docId, info_per_term = extract_features(nafobj)
+        
         if len(argv) > 2 and 'T' in argv[2]:
             print_out_features(docId, info_per_term, tmpdir, True)
         else:
@@ -456,7 +459,12 @@ def main(argv=None):
         factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
         #update and output nafobj
         update_naflayer(nafobj, factDict)
-        #nafobj.dump()
+        
+        endtime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
+        lp = Clp(name="vua-perspectives_factuality",version="1.0",btimestamp=begintime)
+        nafobj.add_linguistic_processor('factualities', lp)
+        
+        nafobj.dump()
 
 
 
