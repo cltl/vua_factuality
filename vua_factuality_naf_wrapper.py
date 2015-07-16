@@ -8,6 +8,7 @@ from KafNafParserPy import *
 from subprocess import call
 import sys
 import time
+import os
 
 class CtermInfo:
     '''
