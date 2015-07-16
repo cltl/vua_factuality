@@ -382,7 +382,7 @@ def update_naflayer(nafobj, factDict):
         myFactualityLayer.add_factuality(fnode)    
     
     nafobj.factuality_layer = myFactualityLayer
-
+    nafobj.dump()
             
 
 def initiate_fact_dict_from_previous_naf(info_per_term):
@@ -451,7 +451,7 @@ def main(argv=None):
         factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
         #update and output nafobj
         update_naflayer(nafobj, factDict)
-        nafobj.dump()
+        #nafobj.dump()
 
 
 
