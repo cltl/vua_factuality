@@ -339,6 +339,7 @@ def add_factuality_info_from_output(fn, onto, factDict):
     Goes through machine learning output and adds information from this output to factDict
     '''
     myfactuality = open(fn, 'r')
+    new_factDict = {}
     for line in myfactuality:
         parts = line.split()
         mytid = parts[2]
@@ -359,8 +360,8 @@ def add_factuality_info_from_output(fn, onto, factDict):
         else:
             my_factval = cFactValLocalLocal(factuality=val, resource=onto)
             factObj.add_factval(my_factval)
-        #set value in factDict (may be new)
-        factDict[mytid] = factObj
+        #set value in new factDict
+        new_factDict[mytid] = factObj
     myfactuality.close()
     return factDict
 
@@ -380,7 +381,8 @@ def update_naflayer(nafobj, factDict):
         for fval in v.factVals:
             add_factvalues(fval.factuality, fval.resource, fnode)
         myFactualityLayer.add_factuality(fnode)    
-    
+    #add factuality node to parser
+    nafobj.root.append(myFactualityLayer.get_node())
     nafobj.factuality_layer = myFactualityLayer
     nafobj.dump()
             
