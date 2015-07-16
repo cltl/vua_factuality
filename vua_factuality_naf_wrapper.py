@@ -322,7 +322,7 @@ def translate_values(factVal):
 
 
 
-def add_factvalues(value, resource, factnode):
+def add_factvalues(value, resource, fnode):
     '''
     Adds a new factuality value to the factuality node
     '''
