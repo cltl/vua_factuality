@@ -346,24 +346,24 @@ def add_factuality_info_from_output(fn, onto, factDict):
         if mytid in factDict:
             factObj = factDict.get(mytid)
         else:
-            factObj = cFactObject(tid=mytid)
+            factObj = []
         val = parts[-1]
         if onto == 'both':
             #factBank is source of direct value
             factVal_fb = cFactValLocal(factuality=val,resource='factbank')
-            factObj.add_factval(factVal_fb)
+            factObj.append(factVal_fb)
             ctval, polval = translate_values(val)
             fVal_ct = cFactValLocal(factuality=ctval,resource='nwr:attributionCertainty')
             fVal_pol = cFactValLocal(factuality=polval,resource='nwr:attributionPolarity')
-            factObj.add_factval(fVal_ct)
-            factObj.add_factval(fVal_pol)
+            factObj.append(fVal_ct)
+            factObj.append(fVal_pol)
         else:
             my_factval = cFactValLocalLocal(factuality=val, resource=onto)
-            factObj.add_factval(my_factval)
+            factObj.append(my_factval)
         #set value in new factDict
         new_factDict[mytid] = factObj
     myfactuality.close()
-    return factDict
+    return new_factDict
 
 def update_naflayer(nafobj, factDict):
     '''
@@ -378,7 +378,7 @@ def update_naflayer(nafobj, factDict):
         fspan = Cspan()
         fspan.add_target_id(tid)
         fnode.set_span(fspan)
-        for fval in v.factVals:
+        for fval in v:
             add_factvalues(fval.factuality, fval.resource, fnode)
         myFactualityLayer.add_factuality(fnode)    
     #add factuality node to parser
