@@ -381,7 +381,7 @@ def update_naflayer(nafobj, factDict):
             add_factvalues(fval.factuality, fval.resource, fnode)
         myFactualityLayer.add_factuality(fnode)    
     
-    nafobj.factuality_layer = myFactLayer
+    nafobj.factuality_layer = myFactualityLayer
 
             
 
