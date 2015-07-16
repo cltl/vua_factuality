@@ -352,7 +352,7 @@ def add_factuality_info_from_output(fn, onto, factDict):
             factVal_fb = cFactValLocal(factuality=val,resource='factbank')
             factObj.add_factval(factVal_fb)
             ctval, polval = translate_values(val)
-            fVal_ct = cFactValLocall(factuality=ctval,resource='nwr:attributionCertainty')
+            fVal_ct = cFactValLocal(factuality=ctval,resource='nwr:attributionCertainty')
             fVal_pol = cFactValLocal(factuality=polval,resource='nwr:attributionPolarity')
             factObj.add_factval(factVal_ct)
             factObj.add_factval(factVal_pol)
