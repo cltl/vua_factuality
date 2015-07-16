@@ -393,10 +393,9 @@ def initiate_fact_dict_from_previous_naf(info_per_term):
     head2dep = {}
     for featobj in info_per_term:
         #FIXME: FOR NOW ONLY TAKING THE FIRST TERM IN A SPAN
-        if featobj.eventTag == 'IEvent':
-            mytid = factobj.tid
-            factObj = cFactObject(tid=mytid)
-            factObj.span = [mytid]
+        if featobj.eventTag == 'BEvent':
+            mytid = featobj.tid
+            factList = []
             factVal = cFactValLocal(resource='nwr:attributionTense')
             if featobj.morphofeat in ['VBD','VBP','VBZ','VBN']:
                 factVal.factuality = 'NON_FUTURE'
@@ -406,19 +405,23 @@ def initiate_fact_dict_from_previous_naf(info_per_term):
                     head2dep[featobj.dephead] = [mytid]
                 else:
                     head2dep[featobj.dephead].append(mytid)
-            factObj.add_factval(factVal)
-            factDict[mytid] = factObj
+            factList.append(factVal)
+            factDict[mytid] = factList
             
     # make events headed by a future marking modal or auxiliary future 
-    for head, deps in head2dep.items():
-        if head.lemma == 'will' or (head.lemma in ['go','become'] and not head.word in ['went', 'gone','became']):
-            for dep in deps:
-                factDict[dep].factuality = 'FUTURE'
-        elif head.morphofeat in ['VBD','VBP','VBZ','VBN']:
-            for dep in deps:
-                factDict[dep].factuality = 'NON_FUTURE'
-            
-                
+    for head in info_per_term:
+        if head.tid in head2dep:
+            deps = head2dep.get(head.tid)
+            if head.lemma == 'will' or (head.lemma in ['go','become'] and not head.word in ['went', 'gone','became']):
+                factVal = cFactValLocal(resource='nwr:attributionTense')
+                factVal.factuality = 'FUTURE'
+                for dep in deps:
+                    factDict[dep] = [factVal]
+            elif head.morphofeat in ['VBD','VBP','VBZ','VBN']:
+                factVal = cFactValLocal(resource='nwr:attributionTense')
+                factVal.factuality = 'NON_FUTURE'
+                for dep in deps:
+                    factDict[dep] = [factVal]         
     return factDict
 
 
