@@ -457,7 +457,7 @@ def main(argv=None):
         mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         timblout = open(tmpdir + '/timblout', 'w')
         call(mytimbl_call,stdout=timblout)
-        tmblout.close()
+        timblout.close()
         #add output from machine learning to NAF file to factDictTense, ontology set to 'both' as default for now
         factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
         #update and output nafobj
