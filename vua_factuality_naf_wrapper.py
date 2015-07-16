@@ -59,7 +59,7 @@ class CtermInfo:
         
         return mylist
 
-class cFactVal:
+class cFactValLocal:
     '''
      Class for capturing information associated with factuality
     '''
@@ -315,32 +315,11 @@ def translate_values(factVal):
         return 'POSSIBLE', 'NEG'
     if factVal == 'CTu':
         return 'CERTAIN', 'UNDERSPECIFIED'
+    elif factVal == 'NONE':
+        return 'CERTAIN', 'POS'
     else:
         return 'UNDERSPECIFIED', 'UNDERSPECIFIED'
 
-
-
-def create_factuality_dict(fn, translate):
-    '''
-    Takes factualityfile as value and creates a dictionary linking term ids to its fact vals
-    '''
-    
-    myfactuality = open(fn, 'r')
-    factsDict = {}
-    for line in myfactuality:
-        parts = line.split('\t')
-        termId = parts[2]
-        factVal = parts[4]
-        if termId in factsDict:
-            factsDict[termId].append(factVal)
-        else:
-            factsDict[termId] = [factVal]
-        if translate:
-            ct, pol = translate_values(factVal)
-            factsDict[termId].append(ct)
-            factsDict[termId].append(pol)
-
-    return factsDict
 
 
 def add_factvalues(value, resource, factnode):
@@ -353,35 +332,57 @@ def add_factvalues(value, resource, factnode):
     fVal.set_value(value)
     fnode.add_factval(fVal)
     
+    
+    
+def add_factuality_info_from_output(fn, onto, factDict):
+    '''
+    Goes through machine learning output and adds information from this output to factDict
+    '''
+    myfactuality = open(fn, 'r')
+    for line in myfactuality:
+        parts = line.split()
+        mytid = parts[2]
+        if mytid in factDict:
+            factObj = factDict.get(mytid)
+        else:
+            factObj = cFactObject(tid=mytid)
+        val = parts[-1]
+        if onto == 'both':
+            #factBank is source of direct value
+            factVal_fb = cFactValLocal(factuality=val,resource='factbank')
+            factObj.add_factval(factVal_fb)
+            ctval, polval = translate_values(val)
+            fVal_ct = cFactValLocall(factuality=ctval,resource='nwr:attributionCertainty')
+            fVal_pol = cFactValLocal(factuality=polval,resource='nwr:attributionPolarity')
+            factObj.add_factval(factVal_ct)
+            factObj.add_factval(factVal_pol)
+        else:
+            my_factval = cFactValLocalLocal(factuality=val, resource=onto)
+            factObj.add_factval(my_factval)
+        #set value in factDict (may be new)
+        factDict[mytid] = factObj
+    myfactuality.close()
+    return factDict
 
-def add_factuality_layer_from_output(nafobj, fn, onto, translate=False):
+def update_naflayer(nafobj, factDict):
     '''
-    Takes outputfile of factuality classifier as input and adds generated information to the naffile for which this output was generated.
+    Takes newly collected factuality information and adds this to the factuality layer
     '''
-    #create dictionary with all factuality values for a term (there can be more if certainty and factual polarity are provided separately)
-    factDict = create_factuality_dict(fn, translate)
-    #create factuality layer
-    myFactLayer = Cfactualities()
-    #add factuality objects for each value in the dictionary
+    myFactualityLayer = Cfactualities()
     fid = 0
-    for tid, fvals in factDict.items():
+    for tid, v in factDict.items():
         fid += 1
         fnode = Cfactuality()
         fnode.set_id('f' + str(fid))
-        #set span with tid as element
         fspan = Cspan()
         fspan.add_target_id(tid)
         fnode.set_span(fspan)
-        #in this case the first value is factbank, second and third are NWR
-        if onto == 'double':
-            add_factvalues(fvals[0], 'factbank', fnode)
-            add_factvalues(fvals[1], 'newsreader', fnode)
-            add_factvalues(fvals[2], 'newsreader', fnode)
-        else:
-            for fv in fvals:
-                add_factvalues(fv, onto, fnode)
-        myFactLayer.add_factuality(fnode)
+        for fval in v.factVals:
+            add_factvalues(fval.factuality, fval.resource, factnode)
+        myFactualityLayer.add_factuality(fnode)    
+    
     nafobj.factuality_layer = myFactLayer
+
             
 
 def initiate_fact_dict_from_previous_naf(info_per_term):
@@ -394,7 +395,7 @@ def initiate_fact_dict_from_previous_naf(info_per_term):
             mytid = factobj.tid
             factObj = cFactObject(tid=mytid)
             factObj.span = [mytid]
-            factVal = cFactVal(resource='nwr:attributionTense')
+            factVal = cFactValLocal(resource='nwr:attributionTense')
             if featobj.morphofeat in ['VBD','VBP','VBZ','VBN']:
                 factVal.factuality = 'NON_FUTURE'
             else:
@@ -443,8 +444,14 @@ def main(argv=None):
         my_inst_call = ['perl', 'scripts/generate.instances.factuality.forsystem.pl', '-d', tmpdir, '-o', tmpdir]
         call(my_inst_call)
         #call machine learner
-        mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o', tmpdir + '/myoutput.tsv' ]
+        ml_output = tmpdir + '/myoutput.tsv'
+        mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         call(mytimbl_call)
+        #add output from machine learning to NAF file to factDictTense, ontology set to 'both' as default for now
+        factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
+        #update and output nafobj
+        update_naflayer(nafobj, factDict)
+        nafobj.dump()
 
 
 
