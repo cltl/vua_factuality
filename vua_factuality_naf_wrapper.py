@@ -378,7 +378,7 @@ def update_naflayer(nafobj, factDict):
         fspan.add_target_id(tid)
         fnode.set_span(fspan)
         for fval in v.factVals:
-            add_factvalues(fval.factuality, fval.resource, factnode)
+            add_factvalues(fval.factuality, fval.resource, fnode)
         myFactualityLayer.add_factuality(fnode)    
     
     nafobj.factuality_layer = myFactLayer
