@@ -453,7 +453,7 @@ def main(argv=None):
         call(my_inst_call)
         #call machine learner
         ml_output = tmpdir + '/myoutput.tsv'
-        mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t scripts/tmp/features.tsv.renumbered.inst', '-o', 'scripts/tmp/myoutput.tsv', '>', 'timblout']
+        mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', 'scripts/tmp/features.tsv.renumbered.inst', '-o', 'scripts/tmp/myoutput.tsv', '>', 'timblout']
         #mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output, '>', 'tmp/timblout']
         call(mytimbl_call)
         #add output from machine learning to NAF file to factDictTense, ontology set to 'both' as default for now
