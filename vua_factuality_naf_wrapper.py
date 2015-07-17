@@ -8,6 +8,7 @@ from KafNafParserPy import *
 from subprocess import Popen, PIPE
 import sys
 import time
+import getopt
 
 class CtermInfo:
     '''
@@ -429,17 +430,24 @@ def initiate_fact_dict_from_previous_naf(info_per_term):
 def main(argv=None):
 
     if argv == None:
-        argv = sys.argv
-    if len(argv) < 2:   
+        argv = sys.argv[1:]
+        optlist, argv = getopt.getopt(argv, 't:')
+        if len(optlist) > 0:
+            for o, a in optlist:
+                if o == '-t':
+                    timblcommand = a
+        else:
+            timblcommand = 'timbl'
+    if len(argv) < 1:   
         print 'Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument'
     else:    
         
         begintime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
-        tmpdir = argv[1]
+        tmpdir = argv[0]
         nafobj = KafNafParser(sys.stdin)
         docId, info_per_term = extract_features(nafobj)
         
-        if len(argv) > 2 and 'T' in argv[2]:
+        if len(argv) > 1 and 'T' in argv[1]:
             print_out_features(docId, info_per_term, tmpdir, True)
         else:
             print_out_features(docId, info_per_term, tmpdir)
@@ -453,7 +461,7 @@ def main(argv=None):
         Popen(my_inst_call)
         #call machine learner
         ml_output = tmpdir + '/myoutput.tsv'
-        mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
+        mytimbl_call = [timblcommand, '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         timblout = open(tmpdir + '/timblout', 'w')
         Popen(mytimbl_call,stdout=timblout)
         timblout.close()
