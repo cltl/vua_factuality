@@ -5,7 +5,7 @@ Created on July 8, 2015
 '''
 
 from KafNafParserPy import *
-from subprocess import popen, PIPE
+from subprocess import Popen, PIPE
 import sys
 import time
 
@@ -447,15 +447,15 @@ def main(argv=None):
         factDictTense = initiate_fact_dict_from_previous_naf(info_per_term)
         #renumerate files
         my_renum_call = ['perl', 'scripts/renumber.features.file.pl', '-d', tmpdir]
-        popen(my_renum_call)
+        Popen(my_renum_call)
         #create input for machine learning in tmpdir
         my_inst_call = ['perl', 'scripts/generate.instances.factuality.forsystem.pl', '-d', tmpdir, '-o', tmpdir]
-        popen(my_inst_call)
+        Popen(my_inst_call)
         #call machine learner
         ml_output = tmpdir + '/myoutput.tsv'
         mytimbl_call = ['timbl', '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         timblout = open(tmpdir + '/timblout', 'w')
-        popen(mytimbl_call,stdout=timblout)
+        Popen(mytimbl_call,stdout=timblout)
         timblout.close()
         #add output from machine learning to NAF file to factDictTense, ontology set to 'both' as default for now
         factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
