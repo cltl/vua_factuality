@@ -288,7 +288,7 @@ def print_out_features(docId, flist, tmpdir):
         newline = docId
         feats = fobj.return_vals_as_list()
         for ft in feats:
-            newline += '\t' + ft
+            newline += '\t' + ft.encode('utf8')
         myout.write(newline + '\n')
     myout.close()
 
@@ -446,7 +446,8 @@ def main(argv=None):
         tmpdir = argv[0]
         nafobj = KafNafParser(sys.stdin)
         docId, info_per_term = extract_features(nafobj)
-        
+        if docId == None:
+            docId = 'docId_dummy'
         if len(argv) > 1 and 'T' in argv[1]:
             print_out_features(docId, info_per_term, tmpdir, True)
         else:
