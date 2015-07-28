@@ -431,7 +431,7 @@ def main(argv=None):
 
     if argv == None:
         argv = sys.argv[1:]
-        optlist, argv = getopt.getopt(argv, 't:s:')
+        optlist, argv = getopt.getopt(argv, 't:p:')
         #set default options for script path and timbl
         rootpath = ''
         timblcommand = 'timbl'
