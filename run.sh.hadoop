@@ -1,0 +1,19 @@
+#!/bin/sh
+# Two arguments by default:
+# $1 = component directory
+# $2 = scratch directory
+compDir=$1
+scratchDir=$2
+
+#local settings to prevent perl from complaining
+export LANGUAGE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+rootDir=${compDir}
+export PYTHONPATH=$PYTHONPATH:${rootDir}/../opt/lib/python2.6/
+export PATH=$PATH:${rootDir}:.
+
+mkdir -p ${scratchDir}
+
+python ${rootDir}/vua_factuality_naf_wrapper.py -t ${rootDir}/../opt/bin/timbl -p ${rootDir} ${scratchDir}
