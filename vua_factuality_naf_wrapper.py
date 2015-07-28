@@ -433,14 +433,14 @@ def main(argv=None):
         argv = sys.argv[1:]
         optlist, argv = getopt.getopt(argv, 't:s:')
         #set default options for script path and timbl
-        scriptpath = ''
+        rootpath = ''
         timblcommand = 'timbl'
         if len(optlist) > 0:
             for o, a in optlist:
                 if o == '-t':
                     timblcommand = a
-                if o == '-s':
-                    scriptpath = a
+                if o == '-p':
+                    rootpath = a
     if len(argv) < 1:   
         print 'Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument'
     else:    
@@ -458,14 +458,14 @@ def main(argv=None):
         #collect tense information from naf file
         factDictTense = initiate_fact_dict_from_previous_naf(info_per_term)
         #renumerate files
-        my_renum_call = ['perl', scriptpath + 'scripts/renumber.features.file.pl', '-d', tmpdir]
+        my_renum_call = ['perl', rootpath + 'scripts/renumber.features.file.pl', '-d', tmpdir]
         call(my_renum_call)
         #create input for machine learning in tmpdir
-        my_inst_call = ['perl', scriptpath + 'scripts/generate.instances.factuality.forsystem.pl', '-d', tmpdir, '-o', tmpdir]
+        my_inst_call = ['perl', rootpath + 'scripts/generate.instances.factuality.forsystem.pl', '-d', tmpdir, '-o', tmpdir]
         call(my_inst_call)
         #call machine learner
         ml_output = tmpdir + '/myoutput.tsv'
-        mytimbl_call = [timblcommand, '-mO:I1,2,3,4', '-k3', '-i', 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
+        mytimbl_call = [timblcommand, '-mO:I1,2,3,4', '-k3', '-i', rootpath + 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         timblout = open(tmpdir + '/timblout', 'w')
         call(mytimbl_call,stdout=timblout)
         timblout.close()
