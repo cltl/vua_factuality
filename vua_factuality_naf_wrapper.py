@@ -228,50 +228,53 @@ def extract_features(nafobj):
     '''
     #1. features from header: docId
     docId = get_public_id(nafobj)
-    #2. create dict with dependent to head + label
-    my_deps = create_dep_dictionary(nafobj)
-    #3. create dict with srl information
-    my_srl_info = create_srl_dict(nafobj)
-    #4. create dict with event information
-    my_event_info = create_event_dict(nafobj)
-    #5. go through term layer and produce full feature set
-    basic_info_per_term = collect_info_per_term(nafobj)
-    #6. update term info with information from other layers
-    for t in basic_info_per_term:
-        tid = t.tid
-        #update dep info
-        if tid in my_deps:
-            tdep = my_deps.get(tid)
-            t.dephead = tdep[0]
-            t.deplabel = tdep[1]
-        #update with information from coreference(/event) layer
-        if tid in my_event_info:
-            newinfo = my_event_info.get(tid)
-            t.eventTag = newinfo[1]
-            #wsd output is prefered: only replace if this is absent
-            if t.wordnet == 'NULL':
+    #no need to create anything if no srls to get events from
+    basic_info_per_term = []
+    if nafobj.srl_layer:
+        #2. create dict with dependent to head + label
+        my_deps = create_dep_dictionary(nafobj)
+        #3. create dict with srl information
+        my_srl_info = create_srl_dict(nafobj)
+        #4. create dict with event information
+        my_event_info = create_event_dict(nafobj)
+        #5. go through term layer and produce full feature set
+        basic_info_per_term = collect_info_per_term(nafobj)
+        #6. update term info with information from other layers
+        for t in basic_info_per_term:
+            tid = t.tid
+            #update dep info
+            if tid in my_deps:
+                tdep = my_deps.get(tid)
+                t.dephead = tdep[0]
+                t.deplabel = tdep[1]
+            #update with information from coreference(/event) layer
+            if tid in my_event_info:
+                newinfo = my_event_info.get(tid)
+                t.eventTag = newinfo[1]
+                #wsd output is prefered: only replace if this is absent
+                if t.wordnet == 'NULL':
+                    for k, v in newinfo[0].items():
+                        if 'WordNet' in k:
+                            t.wordnet = v[0]
+            #update with info from srl layer
+            if tid in my_srl_info:
+                newinfo = my_srl_info.get(tid)
+                t.roleTag = newinfo[1]
                 for k, v in newinfo[0].items():
-                    if 'WordNet' in k:
+                    if 'PropBank' in k:
+                        t.propbank = v[0]
+                    elif 'VerbNet' in k:
+                        t.propbank = v[0]
+                    elif 'FrameNet' in k:
+                        t.framenet = v[0]
+                    elif 'WordNet' in k:
                         t.wordnet = v[0]
-        #update with info from srl layer
-        if tid in my_srl_info:
-            newinfo = my_srl_info.get(tid)
-            t.roleTag = newinfo[1]
-            for k, v in newinfo[0].items():
-                if 'PropBank' in k:
-                    t.propbank = v[0]
-                elif 'VerbNet' in k:
-                    t.propbank = v[0]
-                elif 'FrameNet' in k:
-                    t.framenet = v[0]
-                elif 'WordNet' in k:
-                    t.wordnet = v[0]
-                elif 'ESO' in k:
-                    t.eso = v[0]
-                elif 'EvenType' in k:
-                    t.eventtype = v[0]
-                elif 'NomBank' in k:
-                    t.nombank = v[0]
+                    elif 'ESO' in k:
+                        t.eso = v[0]
+                    elif 'EvenType' in k:
+                        t.eventtype = v[0]
+                    elif 'NomBank' in k:
+                        t.nombank = v[0]
                
     return docId, basic_info_per_term
     
@@ -441,12 +444,16 @@ def main(argv=None):
                     timblcommand = a
                 if o == '-p':
                     rootpath = a
+                    if not rootpath.endswith('/'):
+                        rootpath += '/'
     if len(argv) < 1:   
         print 'Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument'
     else:    
         
         begintime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
         tmpdir = argv[0]
+        if not tmpdir.endswith('/'):
+            tmpdir += '/'
         nafobj = KafNafParser(sys.stdin)
         docId, info_per_term = extract_features(nafobj)
         if docId == None:
