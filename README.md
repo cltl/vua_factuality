@@ -39,3 +39,7 @@ where tmp/ is a path to a directory temporal files can be written to.
 Option [-t path_to_timbl] allows you to specify where timbl is installed (default will assume timbl can be run anywhere using command 'timbl').
 E.g. if timbl can be found at /tmp/opt/bin/timbl, you specify -t /tmp/opt/bin
 Option [-p path_to_root_dir] allows you to specify the path to the location of the module, where the scripts/ folder is found (with necessary perl scripts) and where the machine learning model can be found. This option should be used when running the module from another directory.
+
+License
+
+Apache v2. See LICENSE.txt for details.
