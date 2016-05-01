@@ -108,7 +108,7 @@ def create_dep_dictionary(nafobj):
         head = dep.get_from()
         label = dep.get_function()
         if dependent in my_dep_dict:
-            print 'Problem: this term has more than one head'
+            print('Problem: this term has more than one head')
         else:
             my_dep_dict[dependent] = [head,label]
             
@@ -291,7 +291,7 @@ def print_out_features(docId, flist, tmpdir):
         newline = docId
         feats = fobj.return_vals_as_list()
         for ft in feats:
-            newline += '\t' + ft.encode('utf8')
+            newline += '\t' + ft.encode('utf8').decode()
         myout.write(newline + '\n')
     myout.close()
 
@@ -447,7 +447,7 @@ def main(argv=None):
                     if not rootpath.endswith('/'):
                         rootpath += '/'
     if len(argv) < 1:   
-        print 'Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument'
+        print('Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument')
     else:    
         
         begintime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
