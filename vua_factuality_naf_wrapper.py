@@ -69,6 +69,12 @@ class cFactValLocal:
         self.factuality = factuality
         self.resource = resource
         self.confidence = confidence
+        self.source = None
+
+    def set_source(self, source):
+
+        self.source = source
+
             
 class cFactObject:
     '''
@@ -326,7 +332,7 @@ def translate_values(factVal):
 
 
 
-def add_factvalues(value, resource, fnode):
+def add_factvalues(value, resource, fnode, source = None):
     '''
     Adds a new factuality value to the factuality node
     '''
@@ -334,11 +340,13 @@ def add_factvalues(value, resource, fnode):
     fVal = Cfactval()
     fVal.set_resource(resource)
     fVal.set_value(value)
+    if source != None:
+        fVal.set_source(source)
     fnode.add_factval(fVal)
     
     
     
-def add_factuality_info_from_output(fn, onto, factDict):
+def add_factuality_info_from_output(fn, onto, factDict, source=''):
     '''
     Goes through machine learning output and adds information from this output to factDict
     '''
@@ -353,7 +361,7 @@ def add_factuality_info_from_output(fn, onto, factDict):
             factObj = []
         val = parts[-1]
         if onto == 'both':
-            #factBank is source of direct value
+            #factBank is resource for direct value
             factVal_fb = cFactValLocal(factuality=val,resource='factbank')
             factObj.append(factVal_fb)
             ctval, polval = translate_values(val)
@@ -361,9 +369,15 @@ def add_factuality_info_from_output(fn, onto, factDict):
             fVal_pol = cFactValLocal(factuality=polval,resource='nwr:attributionPolarity')
             factObj.append(fVal_ct)
             factObj.append(fVal_pol)
+            if source != '':
+                factVal_fb.set_source(source)
+                fVal_ct.set_source(source)
+                fVal_pol.set_source(source)
         else:
             my_factval = cFactValLocalLocal(factuality=val, resource=onto)
             factObj.append(my_factval)
+            if source != '':
+                my_factval.set_source(source)
         #set value in new factDict
         new_factDict[mytid] = factObj
     myfactuality.close()
@@ -373,9 +387,13 @@ def update_naflayer(nafobj, factDict):
     '''
     Takes newly collected factuality information and adds this to the factuality layer
     '''
+    #all factuality information from input is stored, so old layer can be removed
+    if nafobj.factuality_layer != None:
+        nafobj.remove_factualities_layer(False)
     myFactualityLayer = Cfactualities()
     fid = 0
-    for tid, v in factDict.items():
+    for tid in sorted(factDict):
+        v = factDict.get(tid)
         fid += 1
         fnode = Cfactuality()
         fnode.set_id('f' + str(fid))
@@ -383,15 +401,48 @@ def update_naflayer(nafobj, factDict):
         fspan.add_target_id(tid)
         fnode.set_span(fspan)
         for fval in v:
-            add_factvalues(fval.factuality, fval.resource, fnode)
-        myFactualityLayer.add_factuality(fnode)    
+            add_factvalues(fval.factuality, fval.resource, fnode, fval.source)
+            myFactualityLayer.add_factuality(fnode)
+
     #add factuality node to parser
     nafobj.root.append(myFactualityLayer.get_node())
     nafobj.factuality_layer = myFactualityLayer
-    
-            
 
-def initiate_fact_dict_from_previous_naf(info_per_term):
+
+def get_fact_info_from_naf(factVal):
+    
+    myFactVal = cFactValLocal(factuality=factVal.get_value(),resource=factVal.get_resource())
+
+    return myFactVal
+
+def initiate_fact_dict_from_previous_naf(nafobj, info_per_term):
+
+    mysource = ''
+    if nafobj.header != None:
+        for lps in nafobj.header.node.findall('linguisticProcessors'):
+            if lps.get('layer') == 'factualities':
+                for lp in lps.getchildren():
+                    mysource = lp.get('name') +  '-' + lp.get('version')
+
+
+    factDictTense = {}
+    for facts in nafobj.get_factualities():
+        tId = facts.get_span().get_span_ids()[0]
+        for factVal in facts.get_factVals():
+            fVal = get_fact_info_from_naf(factVal)
+            if mysource != None:
+                fVal.set_source(mysource)
+            if not tId in factDictTense:
+                factDictTense[tId] = [fVal]
+            else:
+                factDictTense[tId].append(fVal)
+    #We now assume we only need factDictTense if no factuality values have been found (may change in the future)
+    if len(factDictTense) == 0:
+        factDictTense = initiate_fact_dict_from_previous_terms(info_per_term)
+
+    return factDictTense
+
+def initiate_fact_dict_from_previous_terms(info_per_term):
     
     factDict = {}
     head2dep = {}
@@ -430,22 +481,34 @@ def initiate_fact_dict_from_previous_naf(info_per_term):
 
 
 
+
+
+
+
+
 def main(argv=None):
 
     if argv == None:
         argv = sys.argv[1:]
-        optlist, argv = getopt.getopt(argv, 't:p:')
+        optlist, argv = getopt.getopt(argv, 't:p:m:')
         #set default options for script path and timbl
         rootpath = ''
         timblcommand = 'timbl'
+        model = 'timbl.factuality.model.wgt'
+        versionnr='1.1'
+        source = ''
         if len(optlist) > 0:
             for o, a in optlist:
                 if o == '-t':
                     timblcommand = a
-                if o == '-p':
+                elif o == '-p':
                     rootpath = a
                     if not rootpath.endswith('/'):
                         rootpath += '/'
+                elif o == '-m':
+                    model = a
+                    versionnr += '.' + model
+                    source = 'vua-perspectives_factuality-' + versionnr
     if len(argv) < 1:   
         print('Please provide path to tmp folder to store feature output,\n if you want to generate features for several files at the same time, add "T" as a second argument')
     else:    
@@ -462,8 +525,9 @@ def main(argv=None):
             print_out_features(docId, info_per_term, tmpdir, True)
         else:
             print_out_features(docId, info_per_term, tmpdir)
-        #collect tense information from naf file
-        factDictTense = initiate_fact_dict_from_previous_naf(info_per_term)
+
+        #collect tense information from naf file or factuality information already present
+        factDictTense = initiate_fact_dict_from_previous_naf(nafobj, info_per_term)
         #renumerate files
         my_renum_call = ['perl', rootpath + 'scripts/renumber.features.file.pl', '-d', tmpdir]
         call(my_renum_call)
@@ -472,17 +536,17 @@ def main(argv=None):
         call(my_inst_call)
         #call machine learner
         ml_output = tmpdir + '/myoutput.tsv'
-        mytimbl_call = [timblcommand, '-mO:I1,2,3,4', '-k3', '-i', rootpath + 'timbl.factuality.model.wgt', '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
+        mytimbl_call = [timblcommand, '-mO:I1,2,3,4', '-k3', '-i', rootpath + model, '-t', tmpdir + '/features.tsv.renumbered.inst', '-o',  ml_output]
         timblout = open(tmpdir + '/timblout', 'w')
         call(mytimbl_call,stdout=timblout)
         timblout.close()
         #add output from machine learning to NAF file to factDictTense, ontology set to 'both' as default for now
-        factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense)
+        factDict = add_factuality_info_from_output(ml_output, 'both', factDictTense, source)
         #update and output nafobj
         update_naflayer(nafobj, factDict)
         
         endtime = time.strftime('%Y-%m-%dT%H:%M:%S%Z')
-        lp = Clp(name="vua-perspectives_factuality",version="1.0",btimestamp=begintime)
+        lp = Clp(name="vua-perspectives_factuality",version=versionnr,btimestamp=begintime)
         nafobj.add_linguistic_processor('factualities', lp)
         #provide new naf
         nafobj.dump()
